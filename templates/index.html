@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emotion Detector API</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 40px auto; 
+            max-width: 1200px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #2c3e50; 
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        textarea { 
+            width: 100%; 
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        textarea:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #2980b9, #1f618d);
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .processing-info {
+            background: #f39c12;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        .emotions-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+        .emotions-data {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .charts-section {
+            margin: 30px 0;
+        }
+        .chart-item {
+            margin: 25px 0;
+            text-align: center;
+        }
+        .chart-item h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        img { 
+            max-width: 100%; 
+            height: auto;
+            margin: 15px 0; 
+            border: 2px solid #bdc3c7; 
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        img:hover {
+            transform: scale(1.02);
+        }
+        .api-info {
+            background: #3498db;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .api-info h3 {
+            margin-top: 0;
+        }
+        .api-endpoint {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .char-counter {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: right;
+            margin-top: 5px;
+        }
+        .char-counter.warning {
+            color: #e67e22;
+        }
+        .char-counter.danger {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 Advanced Emotion Detector API</h1>
+        
+        <form method="POST" id="emotionForm">
+            <label for="text"><strong>Enter text to analyze:</strong></label>
+            <textarea 
+                name="text" 
+                id="textInput"
+                placeholder="Enter your text here... (maximum 5000 characters)"
+                maxlength="5000"
+            >{{ request.form.get('text', '') if request.method == 'POST' else '' }}</textarea>
+            <div class="char-counter" id="charCounter">0 / 5000 characters</div>
+            
+            <button type="submit" id="analyzeBtn">🔍 Analyze Emotions</button>
+        </form>
+
+        <div class="loading" id="loadingDiv">
+            <div class="spinner"></div>
+            <p>Analyzing emotions... Please wait.</p>
+        </div>
+
+        {% if error_message %}
+            <div class="error">
+                <strong>❌ Error:</strong> {{ error_message }}
+            </div>
+        {% endif %}
+
+        {% if processing_time %}
+            <div class="processing-info">
+                ⏱️ Analysis completed in {{ processing_time }} seconds
+                {% if emotions and emotions.get('cached') %}
+                    (Result retrieved from cache)
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if emotions and "message" not in emotions %}
+            <div class="emotions-section">
+                <h2>🧠 Detected Emotions</h2>
+                <div class="emotions-data">{{ emotions | tojson(indent=2) }}</div>
+            </div>
+        {% elif emotions and "message" in emotions %}
+            <div class="success">
+                <strong>ℹ️ Result:</strong> {{ emotions.message }}
+            </div>
+        {% endif %}
+
+        {% if chart_urls %}
+            <div class="charts-section">
+                <h2>📊 Emotion Visualization Charts</h2>
+                {% for title, img in chart_urls.items() %}
+                    <div class="chart-item">
+                        <h3>{{ title }}</h3>
+                        <img src="data:image/png;base64,{{ img }}" alt="{{ title }}" loading="lazy">
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+       
+        
+    </div>
+
+    <script>
+
+        const textInput = document.getElementById('textInput');
+        const charCounter = document.getElementById('charCounter');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const emotionForm = document.getElementById('emotionForm');
+        const loadingDiv = document.getElementById('loadingDiv');
+
+        function updateCharCounter() {
+            const length = textInput.value.length;
+            charCounter.textContent = `${length} / 5000 characters`;
+            
+            if (length > 4500) {
+                charCounter.className = 'char-counter danger';
+            } else if (length > 4000) {
+                charCounter.className = 'char-counter warning';
+            } else {
+                charCounter.className = 'char-counter';
+            }
+            
+            analyzeBtn.disabled = length === 0 || length > 5000;
+        }
+
+        textInput.addEventListener('input', updateCharCounter);
+        
+        // Form submission handling
+        emotionForm.addEventListener('submit', function(e) {
+            const text = textInput.value.trim();
+            if (!text) {
+                e.preventDefault();
+                alert('Please enter some text to analyze.');
+                return;
+            }
+            
+            loadingDiv.style.display = 'block';
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '🔄 Analyzing...';
+        });
+
+        // Initialize character counter on page load
+        updateCharCounter();
+
+        // Auto-resize textarea
+        textInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    </script>
+</body>
+</html>
