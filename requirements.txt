@@ -7,12 +7,12 @@ Werkzeug==2.3.7
 # Data Visualization
 matplotlib==3.8.0
 seaborn==0.12.2
-numpy==1.24.3
+numpy>=2.1.0
 
 # LangChain and LLM Integration
-langchain==0.0.330
-langchain-mistralai==0.0.1
-langchain-core==0.0.13
+langchain==0.3.25
+langchain-core==0.3.65
+langchain-mistralai==0.2.0
 
 # HTTP Requests (for testing)
 requests==2.31.0
@@ -48,4 +48,5 @@ waitress==2.1.2
 
 # For better performance monitoring (optional)
 psutil==5.9.6
+
 memory-profiler==0.61.0
