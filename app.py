@@ -16,7 +16,7 @@ from llm_with_emotions import (
     create_stacked_chart
 )
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend for better performance
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 app = Flask(__name__)
@@ -87,8 +87,6 @@ def index():
     if request.method == "POST":
         start_time = time.time()
         text = request.form.get("text", "")
-        
-        # Validate input
         cleaned_text, validation_error = validate_text_input(text)
         if validation_error:
             error_message = validation_error
@@ -283,4 +281,5 @@ if __name__ == "__main__":
         host='0.0.0.0',
         port=5000,
         threaded=True  
+
     )
